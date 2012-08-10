@@ -87,8 +87,9 @@ class ARMFastISel : public FastISel {
   LLVMContext *Context;
 
   public:
-    explicit ARMFastISel(FunctionLoweringInfo &funcInfo)
-    : FastISel(funcInfo),
+    explicit ARMFastISel(FunctionLoweringInfo &funcInfo,
+                         GCFunctionInfo &gcInfo)
+    : FastISel(funcInfo, gcInfo),
       TM(funcInfo.MF->getTarget()),
       TII(*TM.getInstrInfo()),
       TLI(*TM.getTargetLowering()) {
@@ -2720,14 +2721,15 @@ bool ARMFastISel::TryToFoldLoad(MachineInstr *MI, unsigned OpNo,
 }
 
 namespace llvm {
-  FastISel *ARM::createFastISel(FunctionLoweringInfo &funcInfo) {
+  FastISel *ARM::createFastISel(FunctionLoweringInfo &funcInfo,
+                                GCFunctionInfo &gcInfo) {
     // Completely untested on non-iOS.
     const TargetMachine &TM = funcInfo.MF->getTarget();
 
     // Darwin and thumb1 only for now.
     const ARMSubtarget *Subtarget = &TM.getSubtarget<ARMSubtarget>();
     if (Subtarget->isTargetIOS() && !Subtarget->isThumb1Only())
-      return new ARMFastISel(funcInfo);
+      return new ARMFastISel(funcInfo, gcInfo);
     return 0;
   }
 }
