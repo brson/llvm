@@ -1429,13 +1429,8 @@ ARMFrameLowering::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
   }
 }
 
-/// GetScratchRegister - Get a register for performing work in the segmented
-/// stack prologue.
-static unsigned
-GetScratchRegister() {
-    return ARM::R8;
-}
 
+// Calculate aligned stack size 
 static uint32_t
 GetAlignedStackSize(uint32_t StackSize) {
     unsigned Shifted = 0;
@@ -1468,6 +1463,7 @@ ARMFrameLowering::adjustForSegmentedStacks(MachineFunction &MF) const {
   unsigned TlsOffset = 63; // the last tls slot
   DebugLoc DL;
   const ARMSubtarget *ST = &MF.getTarget().getSubtarget<ARMSubtarget>();
+  ARMFunctionInfo* ARMFI = MF.getInfo<ARMFunctionInfo>();
 
   unsigned ScratchReg0 = ARM::R4;
   unsigned ScratchReg1 = ARM::R5;
@@ -1548,12 +1544,16 @@ ARMFrameLowering::adjustForSegmentedStacks(MachineFunction &MF) const {
     .addReg(ARM::CPSR);
 
   // Calling __morestack(StackSize, Size of stack arguments)
+
+  // Pass first argument for the __morestack by Scratch Register #0
+  // The amount size of stack required
   AddDefaultPred(BuildMI(allocMBB, DL, TII.get(ARM::MOVi), ScratchReg0)
                  .addImm(AlignedStackSize)).addReg(0);
-  // FIXME: second argument for the __morestack shoud be the size of
-  //        stack arguments.
+  // Pass second argument for the __morestack by Scratch Register #1
+  // The amount size of stack consumed to save function arguments
   AddDefaultPred(BuildMI(allocMBB, DL, TII.get(ARM::MOVi), ScratchReg1)
-                 .addImm(100)).addReg(0);
+                 .addImm(GetAlignedStackSize(ARMFI->getArgumentStackSize())))
+                 .addReg(0);
 
   // push {lr} - Save return address of this function
   AddDefaultPred(BuildMI(allocMBB, DL, TII.get(ARM::STMDB_UPD))
