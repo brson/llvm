@@ -276,6 +276,7 @@ static Triple::VendorType parseVendor(StringRef VendorName) {
 
 static Triple::OSType parseOS(StringRef OSName) {
   return StringSwitch<Triple::OSType>(OSName)
+    .StartsWith("android", Triple::Linux)
     .StartsWith("auroraux", Triple::AuroraUX)
     .StartsWith("cygwin", Triple::Cygwin)
     .StartsWith("darwin", Triple::Darwin)
